@@ -12,7 +12,6 @@ const initialState = {
   list: [],
   item: {},
 };
-
 const Store = createContext(initialState);
 
 const Form = () => {
@@ -47,8 +46,45 @@ const Form = () => {
       });
   };
 
+  const onEdit = (event) => {
+    event.preventDefault();
 
+    const request = {
+      name: state.name,
+      id: item.id,
+      isCompleted: item.isCompleted,
+    };
 
+    fetch(`${HOST_API}/todo`, {
+      method: "PUT",
+      body: JSON.stringify(request),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((todo) => {
+        dispatch({ type: "update-item", item: todo });
+        setState({ name: "" });
+        formRef.current.reset();
+      });
+  };
+
+  return (
+    <form ref={formRef}>
+      <input
+        type="text"
+        name="name"
+        defaultValue={item.name}
+        onChange={(event) => {
+          setState({ ...state, name: event.target.value });
+        }}
+      ></input>
+      {item.id && <button onClick={onEdit}>Actualizar</button>}
+      {!item.id && <button onClick={onAdd}>Agregar</button>}
+    </form>
+  );
+};
 
 const List = () => {
   const { dispatch, state } = useContext(Store);
@@ -118,6 +154,7 @@ const List = () => {
     </div>
   );
 };
+
 function reducer(state, action) {
   switch (action.type) {
     case "update-item":
@@ -160,5 +197,6 @@ function App() {
       <List />
     </StoreProvider>
   );
+}
 
 export default App;
