@@ -12,6 +12,44 @@ const initialState = {
   list: [],
   item: {},
 };
+
+const Store = createContext(initialState);
+
+const Form = () => {
+  const {
+    dispatch,
+    state: { item },
+  } = useContext(Store);
+  const formRef = useRef(null);
+  const [state, setState] = useState(item);
+
+  const onAdd = (event) => {
+    event.preventDefault();
+
+    const request = {
+      name: state.name,
+      id: null,
+      isCompleted: false,
+    };
+
+    fetch(`${HOST_API}/todo`, {
+      method: "POST",
+      body: JSON.stringify(request),
+      headers: {
+        "Content-Type": "application/json",
+      },
+    })
+      .then((response) => response.json())
+      .then((todo) => {
+        dispatch({ type: "add-item", item: todo });
+        setState({ name: "" });
+        formRef.current.reset();
+      });
+  };
+
+
+
+
 const List = () => {
   const { dispatch, state } = useContext(Store);
 
@@ -80,3 +118,47 @@ const List = () => {
     </div>
   );
 };
+function reducer(state, action) {
+  switch (action.type) {
+    case "update-item":
+      const listUpdatedEdit = state.list.map((item) => {
+        if (item.id === action.id) {
+          return action.item;
+        }
+        return item;
+      });
+      return { ...state, list: listUpdatedEdit, item: {} };
+    case "update-list":
+      return { ...state, list: action.list };
+    case "edit-item":
+      return { ...state, item: action.item };
+    case "delete-item":
+      const listUpdated = state.list.filter((item) => {
+        return item.id !== action.id;
+      });
+      return { ...state, list: listUpdated };
+    case "add-item":
+      const newList = state.list;
+      newList.push(action.item);
+      return { ...state, list: newList };
+    default:
+      return state;
+  }
+}
+
+const StoreProvider = ({ children }) => {
+  const [state, dispatch] = useReducer(reducer, initialState);
+  return (
+    <Store.Provider value={{ state, dispatch }}>{children}</Store.Provider>
+  );
+};
+
+function App() {
+  return (
+    <StoreProvider>
+      <Form />
+      <List />
+    </StoreProvider>
+  );
+
+export default App;
